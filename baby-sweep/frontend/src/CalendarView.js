@@ -5,10 +5,11 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 
 const localizer = momentLocalizer(moment);
 
-function CalendarView({ sessionToken, settings, onSelectTimeSlots, maxBlockSelectionMinutes = 60 }) {
+function CalendarView({ sessionToken, settings, onSelectTimeSlots, maxBlockSelectionMinutes = 60, readOnly = false }) {
   const [events, setEvents] = useState([]);
   const [selectedSlots, setSelectedSlots] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedGuess, setSelectedGuess] = useState(null);
 
   useEffect(() => {
     fetchCalendarGuesses();
@@ -36,6 +37,9 @@ function CalendarView({ sessionToken, settings, onSelectTimeSlots, maxBlockSelec
 
   // Handle slot selection (clicking on empty time slots)
   const handleSelectSlot = (slotInfo) => {
+    // Don't allow selection in read-only mode
+    if (readOnly) return;
+
     const { start, end, action } = slotInfo;
 
     // Only allow selection within the valid date range
@@ -84,12 +88,36 @@ function CalendarView({ sessionToken, settings, onSelectTimeSlots, maxBlockSelec
 
   // Handle event click (clicking on existing guesses)
   const handleSelectEvent = (event) => {
-    // Show guess details in an alert (can be enhanced with a modal later)
     const guess = event.resource;
-    const timeBlocks = guess.is_block_guess && guess.time_blocks ?
-      JSON.parse(guess.time_blocks).join(', ') : guess.birth_time;
+    setSelectedGuess(guess);
+  };
 
-    alert(`Guess Details:\n\nName: ${guess.name}\nGender: ${guess.gender}\nDate: ${guess.birth_date}\nTime${guess.is_block_guess ? 's' : ''}: ${timeBlocks}\nWeight: ${guess.weight_lbs} lbs ${guess.weight_oz} oz (${guess.weight_kg} kg)`);
+  // Close guess details modal
+  const closeGuessDetails = () => {
+    setSelectedGuess(null);
+  };
+
+  // Format time for display
+  const formatTime = (timeStr) => {
+    const [hours, minutes] = timeStr.split(':');
+    const date = new Date();
+    date.setHours(parseInt(hours), parseInt(minutes));
+    return date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
+
+  // Format date for display
+  const formatDate = (dateStr) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', {
+      weekday: 'short',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
   };
 
   // Custom event style to show gender colors
@@ -177,7 +205,7 @@ function CalendarView({ sessionToken, settings, onSelectTimeSlots, maxBlockSelec
   return (
     <div className="calendar-view">
       <div className="calendar-header">
-        <h2>Baby Arrival Calendar</h2>
+        <h2>{readOnly ? 'Current Guesses' : 'Baby Arrival Calendar'}</h2>
         <div className="calendar-legend">
           <span className="legend-item"><span className="dot boy"></span> Boy</span>
           <span className="legend-item"><span className="dot girl"></span> Girl</span>
@@ -185,7 +213,7 @@ function CalendarView({ sessionToken, settings, onSelectTimeSlots, maxBlockSelec
         </div>
       </div>
 
-      {selectedSlots.length > 0 && (
+      {!readOnly && selectedSlots.length > 0 && (
         <div className="selection-panel">
           <p>
             <strong>Selected:</strong> {selectedSlots.length} time slot{selectedSlots.length > 1 ? 's' : ''} on {selectedSlots[0].date}
@@ -201,9 +229,17 @@ function CalendarView({ sessionToken, settings, onSelectTimeSlots, maxBlockSelec
         </div>
       )}
 
-      <div className="calendar-instructions">
-        <p>Click on empty time slots to select your guess. Hold Shift and drag to select multiple consecutive times.</p>
-      </div>
+      {!readOnly && (
+        <div className="calendar-instructions">
+          <p>Click on empty time slots to select your guess. Hold Shift and drag to select multiple consecutive times.</p>
+        </div>
+      )}
+
+      {readOnly && (
+        <div className="calendar-instructions">
+          <p>Click on any guess to view details. {events.length} guess{events.length !== 1 ? 'es' : ''} displayed.</p>
+        </div>
+      )}
 
       <Calendar
         localizer={localizer}
@@ -213,7 +249,7 @@ function CalendarView({ sessionToken, settings, onSelectTimeSlots, maxBlockSelec
         style={{ height: 600 }}
         onSelectSlot={handleSelectSlot}
         onSelectEvent={handleSelectEvent}
-        selectable={true}
+        selectable={!readOnly}
         eventPropGetter={eventStyleGetter}
         views={['month', 'week', 'day']}
         defaultView="week"
@@ -225,6 +261,63 @@ function CalendarView({ sessionToken, settings, onSelectTimeSlots, maxBlockSelec
           dateCellWrapper: DayWrapper
         }}
       />
+
+      {selectedGuess && (
+        <div className="modal-overlay" onClick={closeGuessDetails}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Guess Details</h3>
+              <button className="modal-close" onClick={closeGuessDetails}>&times;</button>
+            </div>
+            <div className="modal-body">
+              <div className="guess-detail-row">
+                <span className="guess-detail-label">Name:</span>
+                <span className="guess-detail-value">{selectedGuess.name}</span>
+              </div>
+              {selectedGuess.email && (
+                <div className="guess-detail-row">
+                  <span className="guess-detail-label">Email:</span>
+                  <span className="guess-detail-value">{selectedGuess.email}</span>
+                </div>
+              )}
+              <div className="guess-detail-row">
+                <span className="guess-detail-label">Gender:</span>
+                <span className={`badge badge-${selectedGuess.gender}`}>
+                  {selectedGuess.gender === 'boy' ? '👶 Boy' : selectedGuess.gender === 'girl' ? '👶 Girl' : '🎉 Surprise'}
+                </span>
+              </div>
+              <div className="guess-detail-row">
+                <span className="guess-detail-label">Date:</span>
+                <span className="guess-detail-value">{formatDate(selectedGuess.birth_date)}</span>
+              </div>
+              <div className="guess-detail-row">
+                <span className="guess-detail-label">Time:</span>
+                <span className="guess-detail-value">
+                  {selectedGuess.is_block_guess && selectedGuess.time_blocks ? (
+                    <div>
+                      <strong>Block Guess ({JSON.parse(selectedGuess.time_blocks).length} slots):</strong>
+                      <div style={{ marginTop: '0.5rem' }}>
+                        {JSON.parse(selectedGuess.time_blocks).map(time => formatTime(time)).join(', ')}
+                      </div>
+                    </div>
+                  ) : (
+                    formatTime(selectedGuess.birth_time)
+                  )}
+                </span>
+              </div>
+              <div className="guess-detail-row">
+                <span className="guess-detail-label">Weight:</span>
+                <span className="guess-detail-value">
+                  {selectedGuess.weight_lbs} lbs {selectedGuess.weight_oz} oz ({selectedGuess.weight_kg} kg)
+                </span>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-primary" onClick={closeGuessDetails}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

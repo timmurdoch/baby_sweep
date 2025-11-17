@@ -576,6 +576,15 @@ function App() {
         </div>
       )}
 
+      {currentView === 'form' && (
+        <CalendarView
+          sessionToken={sessionToken}
+          settings={settings}
+          readOnly={true}
+          maxBlockSelectionMinutes={MAX_BLOCK_SELECTION_MINUTES}
+        />
+      )}
+
       {currentView === 'calendar' && (
         <CalendarView
           sessionToken={sessionToken}
