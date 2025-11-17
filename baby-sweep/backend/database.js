@@ -1,5 +1,6 @@
 const Database = require('better-sqlite3');
 const path = require('path');
+require('dotenv').config();
 
 function initializeDatabase() {
   const db = new Database(path.join(__dirname, 'babysweep.db'));
@@ -57,13 +58,15 @@ function initializeDatabase() {
   
   // Insert default settings if they don't exist
   const insertSetting = db.prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)');
-  
-  insertSetting.run('app_password', 'babysweep2025');
-  insertSetting.run('due_date', '2025-12-31');
-  insertSetting.run('welcome_text', 'Welcome to our Baby Sweep! Guess the gender, birth date, time, and weight of our little one.');
-  insertSetting.run('time_block_minutes', '30');
-  insertSetting.run('allow_duplicates', 'true');
-  insertSetting.run('primary_color', '#3b82f6');
+
+  insertSetting.run('app_password', process.env.APP_PASSWORD || 'babysweep2025');
+  insertSetting.run('due_date', process.env.DUE_DATE || '2025-12-31');
+  insertSetting.run('welcome_text', process.env.WELCOME_TEXT || 'Welcome to our Baby Sweep! Guess the gender, birth date, time, and weight of our little one.');
+  insertSetting.run('time_block_minutes', process.env.TIME_BLOCK_MINUTES || '30');
+  insertSetting.run('max_block_selection_minutes', process.env.MAX_BLOCK_SELECTION_MINUTES || '60');
+  insertSetting.run('include_surprise_gender', process.env.INCLUDE_SURPRISE_GENDER || 'true');
+  insertSetting.run('allow_duplicates', process.env.ALLOW_DUPLICATES || 'true');
+  insertSetting.run('primary_color', process.env.PRIMARY_COLOR || '#3b82f6');
   
   console.log('Database initialized successfully!');
   db.close();
