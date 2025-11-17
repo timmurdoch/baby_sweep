@@ -5,7 +5,7 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 
 const localizer = momentLocalizer(moment);
 
-function CalendarView({ sessionToken, settings, onSelectTimeSlots }) {
+function CalendarView({ sessionToken, settings, onSelectTimeSlots, maxBlockSelectionMinutes = 60 }) {
   const [events, setEvents] = useState([]);
   const [selectedSlots, setSelectedSlots] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -62,6 +62,21 @@ function CalendarView({ sessionToken, settings, onSelectTimeSlots }) {
       // Deselect the slot
       setSelectedSlots(selectedSlots.filter(slot => `${slot.date}-${slot.time}` !== slotKey));
     } else {
+      // Check if adding this slot would exceed the max duration
+      const timeBlockMinutes = parseInt(settings.time_block_minutes) || 30;
+      const currentDuration = selectedSlots.length * timeBlockMinutes;
+      const newDuration = currentDuration + timeBlockMinutes;
+
+      if (newDuration > maxBlockSelectionMinutes) {
+        const maxSlots = Math.floor(maxBlockSelectionMinutes / timeBlockMinutes);
+        const maxHours = Math.floor(maxBlockSelectionMinutes / 60);
+        const maxMinutes = maxBlockSelectionMinutes % 60;
+        const maxDurationStr = maxMinutes > 0 ? `${maxHours}h ${maxMinutes}m` : `${maxHours} hour${maxHours > 1 ? 's' : ''}`;
+
+        alert(`Maximum block selection is ${maxDurationStr} (${maxSlots} time slot${maxSlots > 1 ? 's' : ''}). Please clear your current selection or deselect some slots.`);
+        return;
+      }
+
       // Select the slot (add to array for multi-selection)
       setSelectedSlots([...selectedSlots, timeSlot]);
     }

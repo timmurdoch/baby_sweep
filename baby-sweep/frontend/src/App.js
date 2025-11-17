@@ -4,6 +4,11 @@ import CalendarView from './CalendarView';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
+// Configuration from environment variables
+const INCLUDE_SURPRISE_GENDER = process.env.REACT_APP_INCLUDE_SURPRISE_GENDER === 'true';
+const TIME_BLOCK_MINUTES = parseInt(process.env.REACT_APP_TIME_BLOCK_MINUTES) || 30;
+const MAX_BLOCK_SELECTION_MINUTES = parseInt(process.env.REACT_APP_MAX_BLOCK_SELECTION_MINUTES) || 60;
+
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
@@ -116,8 +121,8 @@ function App() {
 
   const generateTimeOptions = () => {
     const options = [];
-    const intervalMinutes = parseInt(settings.time_block_minutes) || 30;
-    
+    const intervalMinutes = parseInt(settings.time_block_minutes) || TIME_BLOCK_MINUTES;
+
     for (let hour = 0; hour < 24; hour++) {
       for (let minute = 0; minute < 60; minute += intervalMinutes) {
         const timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
@@ -129,7 +134,7 @@ function App() {
         options.push({ value: timeStr, label: displayTime });
       }
     }
-    
+
     return options;
   };
 
@@ -406,17 +411,19 @@ function App() {
                   />
                   <label htmlFor="girl">Girl 👶</label>
                 </div>
-                <div className="radio-option">
-                  <input
-                    type="radio"
-                    id="surprise"
-                    name="gender"
-                    value="surprise"
-                    checked={formData.gender === 'surprise'}
-                    onChange={(e) => handleFormChange('gender', e.target.value)}
-                  />
-                  <label htmlFor="surprise">Surprise! 🎉</label>
-                </div>
+                {INCLUDE_SURPRISE_GENDER && (
+                  <div className="radio-option">
+                    <input
+                      type="radio"
+                      id="surprise"
+                      name="gender"
+                      value="surprise"
+                      checked={formData.gender === 'surprise'}
+                      onChange={(e) => handleFormChange('gender', e.target.value)}
+                    />
+                    <label htmlFor="surprise">Surprise! 🎉</label>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -574,6 +581,7 @@ function App() {
           sessionToken={sessionToken}
           settings={settings}
           onSelectTimeSlots={handleCalendarSelection}
+          maxBlockSelectionMinutes={MAX_BLOCK_SELECTION_MINUTES}
         />
       )}
 
