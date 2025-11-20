@@ -1,0 +1,471 @@
+version: 1
+
+###############################################################################
+# 1. SCHEMA MAPPINGS
+###############################################################################
+
+schemas:
+  # Default schema used when no explicit schema_name is provided
+  default:
+    id_column: "id"              # Unique identifier column in the input
+    street_address: "street_address"
+    suburb: "suburb"
+    state: "state"
+    postcode: "postcode"
+
+  # Example alternative schema for a specific data source
+  vendor_x:
+    id_column: "RecordID"
+    street_address: "AddressLine1"
+    suburb: "City"
+    state: "StateCode"
+    postcode: "PostCode"
+
+  # Add more schemas as needed
+
+
+###############################################################################
+# 2. ADDRESS PARSING RULES
+###############################################################################
+
+parsing:
+  # Tokens that usually indicate a unit / apartment component
+  unit_prefixes:
+    - "UNIT"
+    - "U"
+    - "APT"
+    - "APARTMENT"
+    - "SUITE"
+    - "FLAT"
+    - "LVL"
+    - "LEVEL"
+    - "SHOP"
+    - "SHP"
+
+  # Keywords that indicate PO Boxes
+  po_box_prefixes:
+    - "PO BOX"
+    - "P.O. BOX"
+    - "P O BOX"
+    - "GPO BOX"
+    - "POST OFFICE BOX"
+    - "POBOX"
+
+  # Keywords that indicate RMB / rural mail
+  rmb_prefixes:
+    - "RMB"
+    - "ROADSIDEMAILBAG"
+    - "ROAD SIDE MAIL BAG"
+    - "ROADSIDE MAIL BAG"
+
+  # Characters considered as range separators in street numbers
+  street_number_range_separators:
+    - "-"
+    - "–"
+    - "—"
+    - "TO"
+    - " TO "
+
+  # Characters which split unit and street number (e.g. "5/6 Main St")
+  unit_street_separators:
+    - "/"
+    - "\\"
+
+  # Whether to strip alpha suffixes from street numbers (e.g. "6A" -> "6")
+  strip_street_number_alpha_suffix: true
+
+
+###############################################################################
+# 3. STREET TYPE NORMALISATION
+###############################################################################
+
+street_types:
+  # Canonical street types and the list of labels / abbreviations that map to them
+  canonical:
+    STREET:
+      label: "Street"
+      aliases: ["ST", "ST.", "STR", "STREEET", "STRET", "STRE", "STREET"]
+    ROAD:
+      label: "Road"
+      aliases: ["RD", "RD.", "ROD", "RAOD", "RODE"]
+    AVENUE:
+      label: "Avenue"
+      aliases: ["AVE", "AV", "AV.", "AVEN", "AVENU", "AVENEU"]
+    DRIVE:
+      label: "Drive"
+      aliases: ["DR", "DR.", "DRV", "DRIV", "DRIVEE", "DROVE"]
+    CRESCENT:
+      label: "Crescent"
+      aliases: ["CRES", "CRES.", "CRE", "CRESENT", "CRESNT", "CRSCNT", "CRECENT", "CR", "CRS"]
+    COURT:
+      label: "Court"
+      aliases: ["CT", "CT.", "CRT", "COUT", "COU"]
+    PLACE:
+      label: "Place"
+      aliases: ["PL", "PL.", "PLAC", "PCE"]
+    CLOSE:
+      label: "Close"
+      aliases: ["CL", "CL.", "CLSE", "CLS"]
+    PARADE:
+      label: "Parade"
+      aliases: ["PDE", "PDE.", "PARAD", "PRADE"]
+    BOULEVARD:
+      label: "Boulevard"
+      aliases: ["BVD", "BLVD", "BLV", "BVDE", "BOULEVARDE"]
+    TERRACE:
+      label: "Terrace"
+      aliases: ["TCE", "TER", "TERR", "TERCE", "TRCE"]
+    HIGHWAY:
+      label: "Highway"
+      aliases: ["HWY", "HWAY", "HIWAY", "HIGHWY"]
+    LANE:
+      label: "Lane"
+      aliases: ["LN", "LNE", "LANE"]
+    CIRCUIT:
+      label: "Circuit"
+      aliases: ["CCT", "CIR", "CIRC", "CIRCUI", "CIRCT"]
+    WAY:
+      label: "Way"
+      aliases: ["WY", "WAY"]
+    GROVE:
+      label: "Grove"
+      aliases: ["GR", "GRV", "GRVE", "GR."]
+    GARDENS:
+      label: "Gardens"
+      aliases: ["GDNS", "GDN", "GRDNS", "GRDN", "GARDEN"]
+    SQUARE:
+      label: "Square"
+      aliases: ["SQ", "SQR", "SQRE", "SQ."]
+    ESPLANADE:
+      label: "Esplanade"
+      aliases: ["ESP", "ESPL", "ESPLA", "ESPLANAD"]
+    WALK:
+      label: "Walk"
+      aliases: ["WLK", "WALK"]
+    VISTA:
+      label: "Vista"
+      aliases: ["VST", "VISTA", "VIS"]
+    RISE:
+      label: "Rise"
+      aliases: ["RSE", "RISE"]
+    ARCADE:
+      label: "Arcade"
+      aliases: ["ARC", "ARCD", "ARCDE"]
+    GROVE:
+      label: "Grove"
+      aliases: ["GR", "GRV", "GRVE"]
+
+    # PO Box and RMB are modelled as street types for consistency
+    PO_BOX:
+      label: "PO Box"
+      aliases: ["PO BOX", "P.O. BOX", "POST OFFICE BOX", "GPO BOX", "POBOX", "P O BOX"]
+    RMB:
+      label: "RMB"
+      aliases: ["RMB", "ROAD SIDE MAIL BAG", "ROADSIDEMAILBAG", "ROADSIDE MAIL BAG"]
+
+  # Common misspellings that may not be covered by aliases
+  misspellings:
+    "cresent": "CRESCENT"
+    "cresent.": "CRESCENT"
+    "drove": "DRIVE"
+    "rode": "ROAD"
+    "streeet": "STREET"
+    "stret": "STREET"
+    "raod": "ROAD"
+    "avenu": "AVENUE"
+    "aveneu": "AVENUE"
+    "boulevarde": "BOULEVARD"
+
+  fuzzy_matching:
+    enabled: true
+    # Minimum similarity score for fuzzy match against canonical street types
+    min_score: 85
+
+
+###############################################################################
+# 4. LOCALITY AND STATE NORMALISATION
+###############################################################################
+
+localities:
+  # List of valid Australian states and territories
+  states:
+    valid:
+      - "NSW"
+      - "VIC"
+      - "QLD"
+      - "SA"
+      - "WA"
+      - "TAS"
+      - "ACT"
+      - "NT"
+    # Alternate labels or common mistakes to be mapped to canonical abbreviations
+    aliases:
+      "NEW SOUTH WALES": "NSW"
+      "N.S.W.": "NSW"
+      "N.S.W": "NSW"
+      "NEWSOUTHWALES": "NSW"
+      "VICTORIA": "VIC"
+      "VIC.": "VIC"
+      "QUEENSLAND": "QLD"
+      "QLD.": "QLD"
+      "SOUTH AUSTRALIA": "SA"
+      "S.A.": "SA"
+      "S.A": "SA"
+      "WESTERN AUSTRALIA": "WA"
+      "W.A.": "WA"
+      "W.A": "WA"
+      "TASMANIA": "TAS"
+      "TAS.": "TAS"
+      "AUSTRALIAN CAPITAL TERRITORY": "ACT"
+      "A.C.T.": "ACT"
+      "A.C.T": "ACT"
+      "NORTHERN TERRITORY": "NT"
+      "N.T.": "NT"
+      "N.T": "NT"
+
+  # Optional list of common suburb misspellings (supplemented by fuzzy matching)
+  suburb_misspellings:
+    "RICHMOD": "RICHMOND"
+    "FITZROY N": "FITZROY NORTH"
+    "ST KILDA": "SAINT KILDA"
+    "ST KILDA EAST": "SAINT KILDA EAST"
+    "MT WAVERLEY": "MOUNT WAVERLEY"
+    "MT ELIZA": "MOUNT ELIZA"
+
+  suburb_fuzzy_matching:
+    enabled: true
+    min_score: 80
+
+
+###############################################################################
+# 5. INTERNATIONAL ADDRESS DETECTION
+###############################################################################
+
+international_detection:
+  # If true, addresses that do not resemble Australian addresses will be flagged
+  enabled: true
+
+  # Country tokens that strongly indicate non-Australian addresses
+  country_tokens:
+    - "NEW ZEALAND"
+    - "NZ"
+    - "UNITED STATES"
+    - "USA"
+    - "US"
+    - "UNITED KINGDOM"
+    - "UK"
+    - "CANADA"
+    - "SINGAPORE"
+    - "HONG KONG"
+    - "CHINA"
+    - "JAPAN"
+    - "THAILAND"
+    - "MALAYSIA"
+    - "INDONESIA"
+
+  # If postcode is not a 4-digit numeric, treat as potential international
+  require_four_digit_postcode: true
+
+
+###############################################################################
+# 6. G-NAF INTEGRATION
+###############################################################################
+
+gnaf:
+  enabled: true
+
+  # If empty here, the application can override via function argument
+  connection_url: ""
+
+  # Logical table names. Developer can adapt to actual schema.
+  tables:
+    address_table: "gnaf.address_principal"
+    locality_table: "gnaf.locality"
+    street_table: "gnaf.street"
+
+  # Whether approximate matches are allowed
+  allow_approximate_match: true
+
+  # Thresholds for approximate match scoring
+  matching_thresholds:
+    exact_match_score: 1.0
+    min_acceptable_score: 0.75
+
+  # Behaviour for corrections
+  corrections:
+    # Only correct when G-NAF match is above this score
+    min_score_for_correction: 0.9
+
+    # Fields that are allowed to be corrected from G-NAF
+    correctable_fields:
+      - "suburb"
+      - "state"
+      - "postcode"
+      - "street_type"
+
+
+###############################################################################
+# 7. CONFIDENCE SCORING
+###############################################################################
+
+scoring:
+  base_score: 100
+
+  penalties:
+    # Applied when fuzzy match used for street_type
+    fuzzy_street_type: 5
+
+    # Applied when fuzzy match used for suburb
+    fuzzy_suburb: 8
+
+    # Applied when corrections made to suburb and/or postcode
+    suburb_corrected: 10
+    postcode_corrected: 10
+    state_corrected: 10
+
+    # Applied when there is no G-NAF match at all
+    no_gnaf_match: 15
+
+    # Applied when G-NAF match is approximate (not exact)
+    approximate_gnaf_match: 8
+
+    # Applied when unparsed components remain
+    unparsed_components_present: 12
+
+    # Applied when address is detected as international
+    international_address: 80
+
+    # Applied when address is invalid
+    invalid_address: 90
+
+    # Applied when street number parsing is ambiguous
+    ambiguous_street_number: 7
+
+    # Applied when unit number parsing is ambiguous
+    ambiguous_unit_number: 5
+
+    # Applied when multiple conflicting indicators
+    conflicting_indicators: 10
+
+
+###############################################################################
+# 8. MACHINE LEARNING MODEL SETTINGS
+###############################################################################
+
+ml_model:
+  enabled: true
+
+  # Path to model artefacts (relative to package root or absolute)
+  model_path: "models/address_parser_model.pkl"
+
+  # Confidence threshold for accepting ML predictions
+  min_confidence: 0.7
+
+  # Whether to fall back to rules when ML confidence is low
+  fallback_to_rules: true
+
+  # Token classification labels
+  labels:
+    - "UNIT_NUMBER"
+    - "STREET_NUMBER"
+    - "STREET_NAME"
+    - "STREET_TYPE"
+    - "SUBURB"
+    - "STATE"
+    - "POSTCODE"
+    - "OTHER"
+
+
+###############################################################################
+# 9. PROCESSING SETTINGS
+###############################################################################
+
+processing:
+  # Maximum number of rows to process in one batch
+  max_batch_size: 50000
+
+  # Whether to continue processing after individual record failures
+  continue_on_error: true
+
+  # Number of parallel workers for processing (0 = auto-detect)
+  num_workers: 0
+
+  # Whether to preserve all original columns in output
+  preserve_original_columns: true
+
+  # Default value for missing/null fields
+  null_value_placeholder: ""
+
+
+###############################################################################
+# 10. OUTPUT SETTINGS
+###############################################################################
+
+output:
+  # Column names for standardized output fields
+  columns:
+    unit_number: "unit_number"
+    street_number: "street_number"
+    street_name: "street_name"
+    street_type: "street_type"
+    suburb: "suburb"
+    state: "state"
+    postcode: "postcode"
+    confidence_level: "confidence_level"
+    is_international: "is_international"
+    is_invalid_address: "is_invalid_address"
+    inconsistency_flags: "inconsistency_flags"
+    unparsed_components: "unparsed_components"
+    record_id: "record_id"
+
+  # Format for inconsistency_flags (json or comma_separated)
+  inconsistency_flags_format: "comma_separated"
+
+  # Whether to include raw input fields in output
+  include_raw_fields: true
+
+
+###############################################################################
+# 11. VALIDATION RULES
+###############################################################################
+
+validation:
+  # Postcode validation
+  postcode:
+    # Regex pattern for valid Australian postcodes
+    pattern: "^[0-9]{4}$"
+    # Known ranges for Australian postcodes by state
+    ranges:
+      NSW: [[2000, 2599], [2619, 2899], [2921, 2999]]
+      VIC: [[3000, 3999], [8000, 8999]]
+      QLD: [[4000, 4999], [9000, 9999]]
+      SA: [[5000, 5799], [5800, 5999]]
+      WA: [[6000, 6797], [6800, 6999]]
+      TAS: [[7000, 7799], [7800, 7999]]
+      ACT: [[2600, 2618], [2900, 2920]]
+      NT: [[0800, 0899], [0900, 0999]]
+
+  # Street number validation
+  street_number:
+    # Maximum reasonable street number
+    max_value: 99999
+    # Minimum street number
+    min_value: 1
+
+
+###############################################################################
+# 12. LOGGING SETTINGS
+###############################################################################
+
+logging:
+  # Log level: DEBUG, INFO, WARNING, ERROR, CRITICAL
+  level: "INFO"
+
+  # Log format
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+  # Whether to log to file
+  log_to_file: false
+
+  # Log file path (if log_to_file is true)
+  log_file_path: "address_cleaner.log"

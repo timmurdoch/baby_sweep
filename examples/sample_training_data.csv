@@ -1,0 +1,21 @@
+raw_street_address,raw_suburb,raw_state,raw_postcode,clean_unit_number,clean_street_number,clean_street_name,clean_street_type,clean_suburb,clean_state,clean_postcode
+123 Main Street,Richmond,VIC,3121,,123,Main,Street,Richmond,VIC,3121
+Unit 5 456 Smith Road,Melbourne,VIC,3000,5,456,Smith,Road,Melbourne,VIC,3000
+10-12 Collins St,Melbourne,VIC,3000,,10,Collins,Street,Melbourne,VIC,3000
+PO Box 789,Sydney,NSW,2000,,789,,,Sydney,NSW,2000
+5/15 Park Avenue,Bondi,NSW,2026,5,15,Park,Avenue,Bondi,NSW,2026
+Suite 3 100 Queen Street,Brisbane,QLD,4000,3,100,Queen,Street,Brisbane,QLD,4000
+RMB 123,Bendigo,VIC,3550,,123,,,Bendigo,VIC,3550
+42A High St,Fremantle,WA,6160,,42,High,Street,Fremantle,WA,6160
+Level 2 88 King William Road,Adelaide,SA,5000,2,88,King William,Road,Adelaide,SA,5000
+25-27 Murray Street,Hobart,TAS,7000,,25,Murray,Street,Hobart,TAS,7000
+Unit 12 99 Constitution Ave,Canberra,ACT,2601,12,99,Constitution,Avenue,Canberra,ACT,2601
+Shop 7 200 Mitchell St,Darwin,NT,0800,7,200,Mitchell,Street,Darwin,NT,0800
+15 Macquarie Street,Sydney,NSW,2000,,15,Macquarie,Street,Sydney,NSW,2000
+1st Floor 50 Bourke Street,Melbourne,VIC,3000,1,50,Bourke,Street,Melbourne,VIC,3000
+789 Chapel Street,South Yarra,VIC,3141,,789,Chapel,Street,South Yarra,VIC,3141
+33 Beach Road,Bondi Beach,NSW,2026,,33,Beach,Road,Bondi Beach,NSW,2026
+GPO Box 456,Perth,WA,6000,,456,,,Perth,WA,6000
+U8 222 Brunswick Street,Fitzroy,VIC,3065,8,222,Brunswick,Street,Fitzroy,VIC,3065
+101-103 Oxford Street,Paddington,NSW,2021,,101,Oxford,Street,Paddington,NSW,2021
+Apartment 6 55 St Kilda Road,St Kilda,VIC,3182,6,55,St Kilda,Road,St Kilda,VIC,3182

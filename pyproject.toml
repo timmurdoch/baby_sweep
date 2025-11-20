@@ -1,0 +1,97 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "address-cleaner"
+version = "1.0.0"
+description = "Australian address cleaning and normalization library"
+readme = "ADDRESS_CLEANER_README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "Solucio", email = "info@solucio.com.au"}
+]
+keywords = ["address", "cleaning", "normalization", "australian", "gnaf", "geocoding"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Text Processing",
+    "Topic :: Scientific/Engineering :: GIS",
+]
+
+dependencies = [
+    "pandas>=1.3.0",
+    "pyyaml>=5.4.0",
+    "rapidfuzz>=2.0.0",
+]
+
+[project.optional-dependencies]
+# G-NAF database integration
+gnaf = [
+    "sqlalchemy>=1.4.0",
+    "psycopg2-binary>=2.9.0",
+]
+
+# Machine learning features
+ml = [
+    "scikit-learn>=1.0.0",
+    "numpy>=1.21.0",
+]
+
+# All optional features
+all = [
+    "sqlalchemy>=1.4.0",
+    "psycopg2-binary>=2.9.0",
+    "scikit-learn>=1.0.0",
+    "numpy>=1.21.0",
+]
+
+# Development dependencies
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=3.0.0",
+    "black>=22.0.0",
+    "flake8>=4.0.0",
+    "mypy>=0.950",
+]
+
+[project.urls]
+Homepage = "https://github.com/timmurdoch/baby_sweep"
+Documentation = "https://github.com/timmurdoch/baby_sweep/blob/main/ADDRESS_CLEANER_README.md"
+Repository = "https://github.com/timmurdoch/baby_sweep"
+Issues = "https://github.com/timmurdoch/baby_sweep/issues"
+
+[project.scripts]
+address-cleaner = "address_cleaner.cli:main"
+
+[tool.setuptools]
+packages = ["address_cleaner"]
+
+[tool.setuptools.package-data]
+address_cleaner = ["config/*.yaml", "models/*"]
+
+[tool.black]
+line-length = 100
+target-version = ['py38', 'py39', 'py310', 'py311']
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
