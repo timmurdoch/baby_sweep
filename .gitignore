@@ -69,3 +69,7 @@ examples/cleaning_summary.json
 # Documentation builds
 docs/_build/
 site/
+
+# Package archives
+*.tar.gz
+*.zip
